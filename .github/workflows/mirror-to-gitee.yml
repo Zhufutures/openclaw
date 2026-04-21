@@ -2,6 +2,7 @@ name: Mirror to Gitee
 
 on:
   schedule:
+    # 每周一 8:00 UTC (北京时间 16:00)
     - cron: '0 8 * * 1'
   workflow_dispatch:
 
@@ -15,14 +16,6 @@ jobs:
           repository: openclaw/openclaw
           fetch-depth: 0
       
-      - name: Setup SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.GITEE_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H gitee.com >> ~/.ssh/known_hosts
-          git config --global core.sshCommand "ssh -i ~/.ssh/id_ed25519"
-      
       - name: Configure Git
         run: |
           git config user.name "OpenClaw Bot"
@@ -30,8 +23,14 @@ jobs:
       
       - name: Add Gitee Remote
         run: |
-          git remote add gitee git@gitee.com:reverse-traveler-2026/openclaw-v2026.git
+          git remote add gitee https://oauth2:${{ secrets.GITEE_TOKEN }}@gitee.com/reverse-traveler-2026/openclaw-v2026.git
       
       - name: Push to Gitee
         run: |
           git push -f gitee HEAD:master
+      
+      - name: Get Version
+        id: version
+        run: |
+          VERSION=$(cat package.json | grep '"version"' | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+          echo "📦 OpenClaw Version: $VERSION"
