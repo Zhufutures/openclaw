@@ -1,0 +1,25 @@
+name: Sync to Gitee
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mirror to Gitee
+        uses: wearerequired/git-mirror-action@master
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        with:
+          source-repo: "https://github.com/Zhufutures/openclaw.git"
+          destination-repo: "https://gitee.com/reverse-traveler-2026/openclaw-v2026.git"
