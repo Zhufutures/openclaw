@@ -1,0 +1,29 @@
+name: Mirror to Gitee
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout OpenClaw
+        uses: actions/checkout@v4
+        with:
+          repository: openclaw/openclaw
+          fetch-depth: 0
+      
+      - name: Configure Git
+        run: |
+          git config user.name "OpenClaw Bot"
+          git config user.email "openclaw-bot@example.com"
+      
+      - name: Add Gitee Remote
+        run: |
+          git remote add gitee https://${{ secrets.GITEE_USERNAME }}:${{ secrets.GITEE_TOKEN }}@gitee.com/reverse-traveler-2026/openclaw-v2026.git
+      
+      - name: Push to Gitee
+        run: |
+          git push -f gitee HEAD:master
