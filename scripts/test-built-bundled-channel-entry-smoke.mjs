@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { collectRootPackageExcludedExtensionDirs } from "./lib/bundled-plugin-build-entries.mjs";
 import { parsePackageRootArg } from "./lib/package-root-args.mjs";
 import { installProcessWarningFilter } from "./process-warning-filter.mjs";
 
@@ -16,6 +17,7 @@ const { packageRoot } = parsePackageRootArg(
   "OPENCLAW_BUNDLED_CHANNEL_SMOKE_ROOT",
 );
 const distExtensionsRoot = path.join(packageRoot, "dist", "extensions");
+const excludedPackageExtensionDirs = collectRootPackageExcludedExtensionDirs({ cwd: packageRoot });
 const installedLayoutEnv = "OPENCLAW_BUNDLED_CHANNEL_SMOKE_INSTALLED_LAYOUT";
 
 function packageRootLooksInstalled(root) {
@@ -82,6 +84,9 @@ function collectBundledChannelEntryFiles() {
     if (!packageJson.openclaw?.channel) {
       continue;
     }
+    if (excludedPackageExtensionDirs.has(dirent.name)) {
+      continue;
+    }
 
     const extensionEntries =
       Array.isArray(packageJson.openclaw.extensions) && packageJson.openclaw.extensions.length > 0
@@ -144,7 +149,15 @@ function assertEntryFileExists(entry) {
 
 async function smokeChannelEntry(entryFile) {
   assertEntryFileExists(entryFile);
-  const entry = (await importBuiltModule(entryFile.path)).default;
+  let entry;
+  try {
+    entry = (await importBuiltModule(entryFile.path)).default;
+  } catch (error) {
+    throw new Error(
+      `${entryFile.id} ${entryFile.kind} entry failed to import ${entryFile.path}: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    );
+  }
   assert.equal(entry.kind, "bundled-channel-entry", `${entryFile.id} channel entry kind mismatch`);
   assert.equal(
     typeof entry.loadChannelPlugin,
@@ -163,7 +176,15 @@ async function smokeChannelEntry(entryFile) {
 
 async function smokeSetupEntry(entryFile) {
   assertEntryFileExists(entryFile);
-  const entry = (await importBuiltModule(entryFile.path)).default;
+  let entry;
+  try {
+    entry = (await importBuiltModule(entryFile.path)).default;
+  } catch (error) {
+    throw new Error(
+      `${entryFile.id} ${entryFile.kind} entry failed to import ${entryFile.path}: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    );
+  }
   if (entry?.kind !== "bundled-channel-setup-entry") {
     return false;
   }

@@ -11,7 +11,9 @@ import {
   createOpenAIReasoningCompatibilityWrapper,
   createOpenAIResponsesContextManagementWrapper,
   createOpenAIServiceTierWrapper,
+  createOpenAIStringContentWrapper,
   createOpenAITextVerbosityWrapper,
+  createOpenAIThinkingLevelWrapper,
   resolveOpenAIFastMode,
   resolveOpenAIServiceTier,
   resolveOpenAITextVerbosity,
@@ -34,6 +36,7 @@ export {
   applyAnthropicPayloadPolicyToParams,
   buildCopilotDynamicHeaders,
   composeProviderStreamWrappers,
+  createAnthropicThinkingPrefillPayloadWrapper,
   createBedrockNoCacheWrapper,
   createMoonshotThinkingWrapper,
   createToolStreamWrapper,
@@ -41,10 +44,12 @@ export {
   defaultToolStreamExtraParams,
   hasCopilotVisionInput,
   isAnthropicBedrockModel,
+  isOpenAICompatibleThinkingEnabled,
   type ProviderStreamWrapperFactory,
   resolveAnthropicPayloadPolicy,
   resolveMoonshotThinkingType,
   streamWithPayloadPatch,
+  stripTrailingAnthropicAssistantPrefillWhenThinking,
 } from "./provider-stream-shared.js";
 
 export type ProviderStreamFamily =
@@ -118,8 +123,11 @@ export function buildProviderStreamFamilyHooks(
             config: ctx.config,
             agentDir: ctx.agentDir,
           });
+          nextStreamFn = createOpenAIStringContentWrapper(nextStreamFn);
           return createOpenAIResponsesContextManagementWrapper(
-            createOpenAIReasoningCompatibilityWrapper(nextStreamFn),
+            createOpenAIReasoningCompatibilityWrapper(
+              createOpenAIThinkingLevelWrapper(nextStreamFn, ctx.thinkingLevel),
+            ),
             ctx.extraParams,
           );
         },
